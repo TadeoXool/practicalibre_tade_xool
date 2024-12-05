@@ -13,19 +13,18 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  // Inicialmente, mostrar la página de login
-  bool showLoginPage = true;
 
-  // Función para alternar entre las páginas
-  void togglePages() {
-    setState(() {
+  //initially,show login page
+  bool showLoginPage= true;
+  // tooglle between pages
+  void togglePages(){
+    setState((){
       showLoginPage = !showLoginPage;
     });
   }
-
   @override
   Widget build(BuildContext context) {
-    if (showLoginPage) {
+    if (showLoginPage){
       return LoginPage(
         togglePages: togglePages,
       );

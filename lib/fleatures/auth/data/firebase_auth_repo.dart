@@ -2,70 +2,100 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:practicalibre_tade_xool/fleatures/auth/domain/entities/app_user.dart';
 import 'package:practicalibre_tade_xool/fleatures/auth/domain/entities/repos/auth_repo.dart';
 
-class FirebaseAuthRepo implements AuthRepo {
+
+class FirebaseAuthRepo implements AuthRepo{
+  
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-
+  final FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
+  
   @override
-  Future<AppUser> loginWhithEmailPassword(String email, String paswword) async {
-    try {
-      // attempt sign in
-      UserCredential userCredential = await firebaseAuth
-          .signInWithEmailAndPassword(email: email, password: paswword);
+  Future<AppUser?> loginWithEmailPassword(String email, String password) async {
+    try{
 
-      // create user
+      //atempt sign in
+      UserCredential userCredential = await firebaseAuth
+      .signInWithEmailAndPassword(email: email, password: password);
+      
+      //fecth user document from firestore
+      DocumentSnapshot userDoc = await firebaseFirestore
+      .collection('users')
+      .doc(userCredential.user!.uid)
+      .get();
+
+      //create user
       AppUser user = AppUser(
-        uid: userCredential.user!.uid,
-        email: email,
-        name: '',
+        uid: userCredential.user!.uid, 
+      email: email, 
+      name: userDoc['name'],
       );
 
-      // return user
+      //return user 
       return user;
     }
-    // catch any errors..
+     // catch any errors..
     catch (e) {
       throw Exception('Login failed: $e');
     }
   }
+   @override
+  Future<AppUser?> registerWithEmailPassword(String name, String email, String password) async {
+    try{
 
-  @override
-  Future<AppUser> resgisterWhithEmailPassword(
-      String name, String email, String paswword) async {
-    try {
-      // attempt sign up
+      //atempt sign up
       UserCredential userCredential = await firebaseAuth
-          .createUserWithEmailAndPassword(email: email, password: paswword);
+      .createUserWithEmailAndPassword(email: email, password: password);
 
-      // create user
+      //create user
       AppUser user = AppUser(
-        uid: userCredential.user!.uid,
-        email: email,
-        name: name,
+        uid: userCredential.user!.uid, 
+      email: email, 
+      name: name,
       );
 
-      // return user
+      //save user in firestore
+      await firebaseFirestore
+      .collection("users")
+      .doc(user.uid)
+      .set(user.toJson());
+
+      //return user 
       return user;
     }
-    // catch any errors..
+     // catch any errors..
     catch (e) {
       throw Exception('Login failed: $e');
     }
   }
-
+  
   @override
-  Future<void> logout() async {
+  Future<void> logout()async {
     await firebaseAuth.signOut();
   }
 
   @override
   Future<AppUser?> getCurrentUser() async {
-    // Código adicional aquí para obtener el usuario actual
-    final firebaseUser = firebaseAuth.currentUser;
-
+    //get current logged in user from Firebase
+    final firebaseUser= firebaseAuth.currentUser;
+// no user logged in..
     if (firebaseUser == null) {
+
       return null;
     }
 
-    return AppUser(uid: firebaseUser.uid, email: firebaseUser.email!, name: '');
+    //fetch user document from firestore
+    DocumentSnapshot userDoc = 
+    await firebaseFirestore.collection("user").doc(firebaseUser.uid).get();
+
+    // check if user doc exists
+    if (!userDoc.exists){
+      return null;
+    }
+    // user exists
+    return AppUser(
+      uid: firebaseUser.uid, 
+      email: firebaseUser.email!, 
+      name: userDoc['name'],
+      );
   }
-}
+  }
+
